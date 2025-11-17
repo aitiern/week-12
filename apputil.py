@@ -6,10 +6,29 @@ import matplotlib.pyplot as plt
 
 
 def update_board(current_board):
-    # your code here ...
-    updated_board = current_board
+    """
+    Execute one step of Conway's Game of Life on a binary NumPy array.
+    """
 
+    board = current_board
+    neighbors = np.zeros_like(board, dtype=int)
+
+    # Count all 8 neighbors using np.roll
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            if di == 0 and dj == 0:
+                continue  # skip center cell
+            neighbors += np.roll(np.roll(board, di, axis=0), dj, axis=1)
+
+    # Apply the 4 Game of Life rules
+    alive = board == 1
+
+    survive = alive & ((neighbors == 2) | (neighbors == 3))
+    born = (~alive) & (neighbors == 3)
+
+    updated_board = (survive | born).astype(int)
     return updated_board
+
 
 
 def show_game(game_board, n_steps=10, pause=0.5):
@@ -39,3 +58,64 @@ def show_game(game_board, n_steps=10, pause=0.5):
         # wait for the next step
         if step + 1 < n_steps:
             time.sleep(pause)
+
+
+def play_random_game_recursive(n_steps=5):
+    """
+    Generate a random 10x10 board and recursively apply update_board
+    n_steps times. Returns the final board.
+    """
+    board = np.random.randint(2, size=(10, 10))
+
+    def helper(current_board, steps_left):
+        if steps_left == 0:
+            return current_board
+        return helper(update_board(current_board), steps_left - 1)
+
+    return helper(board, n_steps)
+
+
+
+
+
+def knapsack(W, weights, values, full_table=False):
+    # Get the number of items based on the values list
+    n = len(values)
+    # Initialize a (n+1) x (W+1) table filled with 0s for DP
+    table = [[0 for x in range(W + 1)] for x in range(n + 1)]
+
+    # Loop over the rows: i represents "using the first i items"
+    for i in range(n + 1):
+        # Loop over the columns: j represents current capacity from 0..W
+        for j in range(W + 1):
+
+            # Base case: if no items or zero capacity, max value is 0
+            if i == 0 or j == 0:
+                table[i][j] = 0
+
+            # Otherwise, consider the i-th item (index i-1) if it fits
+            elif weights[i-1] <= j:
+                # Value of taking the i-th item
+                a_1 = values[i-1]
+                # Remaining capacity after taking the i-th item
+                diff = j - weights[i-1]
+                # Best value achievable with remaining capacity and previous items
+                a_2 = table[i-1][diff]
+                # Total value if we include the i-th item
+                a = a_1 + a_2
+                # Value if we do NOT include the i-th item (just use previous row)
+                b = table[i-1][j]
+                # Choose the better of including or excluding the item
+                table[i][j] = max(a, b)
+
+            # If the i-th item does not fit, we must exclude it
+            else:
+                # So the best we can do is the same as with the previous items
+                table[i][j] = table[i-1][j]
+
+    # If full_table is True, return the entire DP table
+    if full_table:
+        return table
+
+    # Otherwise, return the optimal value for n items and capacity W
+    return table[n][W]
