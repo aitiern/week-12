@@ -8,26 +8,25 @@ import matplotlib.pyplot as plt
 def update_board(current_board):
     """
     Execute one step of Conway's Game of Life on a binary NumPy array.
+    Non-wrapping boundaries: cells outside the board are treated as dead.
     """
+    board = current_board.astype(int)
 
-    board = current_board
-    neighbors = np.zeros_like(board, dtype=int)
+    # Pad with a border of zeros so edges do NOT wrap
+    padded = np.pad(board, pad_width=1, mode="constant", constant_values=0)
 
-    # Count all 8 neighbors using np.roll
-    for di in (-1, 0, 1):
-        for dj in (-1, 0, 1):
-            if di == 0 and dj == 0:
-                continue  # skip center cell
-            neighbors += np.roll(np.roll(board, di, axis=0), dj, axis=1)
+    # Count neighbors from the 8 surrounding shifts on the padded board
+    neighbors = (
+        padded[:-2, :-2] + padded[:-2, 1:-1] + padded[:-2, 2:] +
+        padded[1:-1, :-2] +                   padded[1:-1, 2:] +
+        padded[2:, :-2]  + padded[2:, 1:-1]  + padded[2:, 2:]
+    )
 
-    # Apply the 4 Game of Life rules
     alive = board == 1
-
     survive = alive & ((neighbors == 2) | (neighbors == 3))
     born = (~alive) & (neighbors == 3)
 
-    updated_board = (survive | born).astype(int)
-    return updated_board
+    return (survive | born).astype(int)
 
 
 
